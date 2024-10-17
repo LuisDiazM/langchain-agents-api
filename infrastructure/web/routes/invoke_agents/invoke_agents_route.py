@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from infrastructure.web.routes.invoke_agents.models_req_resp import AgentRequest
+from infrastructure.web.routes.invoke_agents.models_req_resp import AgentRequest, ChatbotResponse
 from infrastructure.cache.chat_history_redis import get_redis
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import AgentExecutor
@@ -15,7 +15,7 @@ agent = create_agent()
 tools = tools_generator()
 
 @invoke_route.post("/invoke")
-async def root(request: AgentRequest):
+async def root(request: AgentRequest)->ChatbotResponse:
     try:
         environment = os.getenv("ENV")
         is_debug = True
@@ -31,6 +31,6 @@ async def root(request: AgentRequest):
                                                             verbose=is_debug)
         response = agent_executor.invoke({"input": request.content})
         bot_message = response.get("output")
-        return {"response": bot_message, "session_id": request.session_id}
+        return ChatbotResponse(response=bot_message, session_id=request.session_id)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

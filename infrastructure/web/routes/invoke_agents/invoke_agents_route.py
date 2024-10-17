@@ -7,7 +7,6 @@ import os
 
 from domain.agents.agent_generator import create_agent
 from domain.agents.tools_generator import tools_generator
-from domain.log.logger import get_logger
 
 invoke_route = APIRouter(tags=["Interact with agent"])
 
@@ -16,15 +15,15 @@ agent = create_agent()
 tools = tools_generator()
 
 @invoke_route.post("/invoke")
-async def root(request: AgentRequest, logger=[Depends(get_logger)]):
+async def root(request: AgentRequest):
     try:
-        history = get_redis(session_id=request.session_id)
-        memory = ConversationBufferMemory(
-            chat_memory=history, memory_key="chat_history", return_messages=True)
         environment = os.getenv("ENV")
         is_debug = True
         if environment.upper() == "PROD":
             is_debug = False
+        history = get_redis(session_id=request.session_id)
+        memory = ConversationBufferMemory(
+            chat_memory=history, memory_key="chat_history", return_messages=True)
         agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, 
                                                             tools=tools,
                                                             handle_parsing_errors=True, 
@@ -34,5 +33,4 @@ async def root(request: AgentRequest, logger=[Depends(get_logger)]):
         bot_message = response.get("output")
         return {"response": bot_message, "session_id": request.session_id}
     except Exception as e:
-        logger.error(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

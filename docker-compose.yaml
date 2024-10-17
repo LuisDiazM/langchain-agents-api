@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  cache:
+    image: redislabs/redisearch
+    restart: always
+    ports:
+      - '6380:6379'
+
+  server:
+    build: .
+    image: agent-api
+    restart: always
+    depends_on:
+      - cache
+    env_file:
+      - .env
+    ports:
+      - '8000:8000'
